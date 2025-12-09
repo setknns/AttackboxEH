@@ -1,0 +1,107 @@
+/* Simpele styling voor de demo */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #333;
+}
+body {
+    flex-direction: column; /* Zet items onder elkaar (header boven, inhoud onder) */
+    justify-content: flex-start; /* Begin bovenaan */
+}
+
+.main-header {
+    width: 100%;
+    background-color: #ff0017; /* Red Bull donkerblauw */
+    color: white;
+    display: flex;
+    justify-content: space-between; /* Logo links, knop rechts */
+    align-items: center;
+    padding: 1rem 2rem;
+    box-sizing: border-box; /* Zorgt dat padding de breedte niet verpest */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    position: fixed; /* Blijft bovenaan staan als je scrollt */
+    top: 0;
+    left: 0;
+}
+
+/* Ruimte maken zodat de content niet onder de vaste header verdwijnt */
+.container {
+    margin-top: 100px; /* Pas dit aan als de header groter/kleiner is */
+}
+
+.logo {
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* De Inlog Knop in de header */
+.login-btn {
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none; /* Geen onderstreping */
+    border-radius: 4px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background-color: white;
+    color: #0d47a1; /* Tekst wordt blauw bij hover */
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 2rem 3rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+}
+
+h1 {
+    color: #0d47a1; /* Red Bull blauw */
+}
+
+button {
+    background-color: #d90022; /* Red Bull rood */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #b3001b;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+#responseMessage {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+#responseMessage.success {
+    color: green;
+}
+
+#responseMessage.error {
+    color: red;
+}

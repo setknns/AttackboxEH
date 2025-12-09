@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Red Bull Promo</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Specifieke styles voor het login formulier */
+        .login-wrapper {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; margin-top: 10px; }
+        .switch-link {
+            margin-top: 15px;
+            display: block;
+            text-align: center;
+            color: #0d47a1;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .hidden { display: none; }
+        #security-step { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        .status-msg { margin-top: 10px; text-align: center; font-weight: bold; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="logo">Red Bull Promo</div>
+    <nav><a href="/" class="login-btn">Home</a></nav>
+</header>
+
+<div class="container login-wrapper">
+
+    <div id="login-section">
+        <h2>Inloggen</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label>Gebruikersnaam</label>
+                <input type="text" id="login-user" required>
+            </div>
+            <div class="form-group">
+                <label>Wachtwoord</label>
+                <input type="password" id="login-pass" required>
+            </div>
+            <button type="submit">Inloggen</button>
+        </form>
+        <p id="login-msg" class="status-msg"></p>
+        <span class="switch-link" id="go-to-reset">Wachtwoord vergeten?</span>
+    </div>
+
+    <div id="reset-section" class="hidden">
+        <h2>Wachtwoord Herstellen</h2>
+        <p>Vul je gebruikersnaam in om de beveiligingsvraag te zien.</p>
+
+        <div class="form-group">
+            <label>Gebruikersnaam</label>
+            <input type="text" id="reset-user">
+        </div>
+        <button id="get-question-btn">Haal Vraag Op</button>
+
+        <div id="security-step" class="hidden">
+            <p><strong>Beveiligingsvraag:</strong> <span id="question-text" style="color: #d90022;">...</span></p>
+
+            <div class="form-group">
+                <label>Hoe heet de kantoor kat?</label>
+                <input type="text" id="reset-answer">
+            </div>
+            <div class="form-group">
+                <label>Wanneer is de kantoor kat jarig?</label>
+                <input type="text" id="reset-answer2">
+            </div>
+            <div class="form-group">
+                <label>Nieuw Wachtwoord</label>
+                <input type="password" id="new-password">
+            </div>
+            <button id="confirm-reset-btn">Reset Wachtwoord</button>
+        </div>
+
+        <p id="reset-msg" class="status-msg"></p>
+        <span class="switch-link" id="go-to-login">Terug naar Inloggen</span>
+    </div>
+
+</div>
+
+<script>
+    // -- WISSELEN TUSSEN SCHERMEN --
+    const loginSec = document.getElementById('login-section');
+    const resetSec = document.getElementById('reset-section');
+
+    document.getElementById('go-to-reset').onclick = () => {
+        loginSec.classList.add('hidden');
+        resetSec.classList.remove('hidden');
+    };
+    document.getElementById('go-to-login').onclick = () => {
+        resetSec.classList.add('hidden');
+        loginSec.classList.remove('hidden');
+    };
+
+    // -- LOGICA VOOR INLOGGEN --
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = document.getElementById('login-user').value;
+        const pass = document.getElementById('login-pass').value;
+        const msg = document.getElementById('login-msg');
+
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+
+        msg.textContent = data.message;
+        msg.className = data.success ? 'status-msg success' : 'status-msg error';
+
+        if(data.success) {
+            // Redirect na 1 seconde bij succes
+            setTimeout(() => window.location.href = '/cmd.html', 1500);
+        }
+    });
+
+    // -- LOGICA VOOR RESET: STAP 1 (Vraag ophalen) --
+    document.getElementById('get-question-btn').addEventListener('click', async () => {
+        const user = document.getElementById('reset-user').value;
+        const msg = document.getElementById('reset-msg');
+        const secStep = document.getElementById('security-step');
+
+        const res = await fetch('/api/get-question', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username: user })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('question-text').textContent = data.question;
+            secStep.classList.remove('hidden'); // Toon de volgende stap
+            msg.textContent = '';
+            // Disable het gebruikersnaam veld zodat je niet per ongeluk switcht
+            document.getElementById('reset-user').disabled = true;
+            document.getElementById('get-question-btn').style.display = 'none';
+        } else {
+            msg.textContent = data.message;
+            msg.className = 'status-msg error';
+            secStep.classList.add('hidden');
+        }
+    });
+
+    // -- LOGICA VOOR RESET: STAP 2 (Antwoord controleren) --
+    document.getElementById('confirm-reset-btn').addEventListener('click', async () => {
+        const user = document.getElementById('reset-user').value;
+
+        const answer1 = document.getElementById('reset-answer').value;
+        const answer2 = document.getElementById('reset-answer2').value;
+
+        const newPass = document.getElementById('new-password').value;
+
+        const msg = document.getElementById('reset-msg');
+
+        const res = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                username: user,
+                answer1: answer1,
+                answer2: answer2,
+                newPassword: newPass })
+        });
+        const data = await res.json();
+
+        msg.textContent = data.message;
+
+        if (data.success) {
+            msg.className = 'status-msg success';
+            // Na succes terugsturen naar login scherm
+            setTimeout(() => {
+                location.reload(); // Herlaad de pagina om velden te resetten
+            }, 2000);
+        } else {
+            msg.className = 'status-msg error';
+        }
+    });
+</script>
+</body>
+</html>
