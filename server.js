@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-let isLoggedIn = true;
+let isLoggedIn = false;
 let currentDir = process.cwd();
 
 let users = {
@@ -80,7 +80,7 @@ app.post('/api/reset-password', (req, res) => {
 
 
 
-// Maak een "API endpoint" voor het claimen
+
 app.post('/claim', (req, res) => {
     console.log('Nieuwe claim ontvangen!');
 
@@ -92,7 +92,7 @@ app.post('/claim', (req, res) => {
 });
 
 app.post('/cmd', (req, res) => {
-    // 1. Check login
+
     if (isLoggedIn === false) return res.status(501).send("Log in required.");
 
     let { command } = req.body;
@@ -100,19 +100,15 @@ app.post('/cmd', (req, res) => {
 
     command = command.trim();
 
-    // 2. Specifieke check voor 'cd' commando's
-    // We kijken of het commando begint met 'cd' (hoofdletterongevoelig)
     if (command.toLowerCase().startsWith('cd')) {
 
-        // Haal 'cd' weg van de string.
-        // Bij "cd.." blijft ".." over. Bij "cd map" blijft " map" over.
         let targetArg = command.substring(2).trim();
 
-        // Als er niks achter 'cd' staat, of alleen 'cd.', blijf waar je bent
+
         if (!targetArg || targetArg === '.') {
-            // Doe niks, stuur huidige map terug
+
         } else {
-            // Probeer het pad op te lossen
+
             try {
                 const newPath = path.resolve(currentDir, targetArg);
                 currentDir = newPath; // Update de server variabele
@@ -121,18 +117,18 @@ app.post('/cmd', (req, res) => {
             }
         }
 
-        // Stuur JSON terug met lege output, maar WEL de nieuwe map (cwd)
+
         return res.json({ output: '', cwd: currentDir });
     }
 
-    // 3. Voer andere commando's uit
+
     exec(command, { cwd: currentDir }, (error, stdout, stderr) => {
         let output = '';
         if (error) output += error.message;
         if (stderr) output += stderr;
         output += stdout;
 
-        // We sturen nu ALTIJD JSON terug, met de output EN de huidige map
+
         res.json({ output: output, cwd: currentDir });
     });
 });
