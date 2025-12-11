@@ -1,190 +1,136 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Shell</title>
+    <title>Command Prompt</title>
     <style>
+        /* Windows CMD Look & Feel */
         body {
-            background-color: #0d0d0d;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 10px;
+            background-color: #0c0c0c; /* Bijna zwart */
+            color: #cccccc; /* Lichtgrijs (standaard Windows CMD kleur) */
+            font-family: Consolas, "Lucida Console", monospace;
             font-size: 16px;
-        }
-        #terminal {
-            width: 100%;
-            height: 90vh;
-            overflow-y: auto;
-            border: 1px solid #333;
-            box-sizing: border-box;
-            padding: 5px;
-        }
-        #history {
-            width: 100%;
-        }
-        pre {
-            color: #00ff00;
             margin: 0;
-            white-space: pre-wrap;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+
+        /* Container voor alle voorgaande commando's */
+        #output-area {
+            white-space: pre-wrap; /* Zorgt dat enters en spaties behouden blijven */
             word-wrap: break-word;
         }
-        pre.error {
-            color: #ff4136;
-        }
-        #command-line {
+
+        /* De input regel onderaan */
+        .input-line {
             display: flex;
+            margin-top: 5px;
         }
-        #prompt {
-            margin-right: 5px;
-            color: #00ff00;
+
+        .prompt {
+            margin-right: 8px;
+            user-select: none; /* Zodat je de prompt niet per ongeluk selecteert */
         }
-        #command-input {
-            flex-grow: 1;
-            background: none;
+
+        /* Het invoerveld onzichtbaar maken zodat het lijkt alsof je direct typt */
+        input[type="text"] {
+            background: transparent;
             border: none;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
+            color: inherit;
+            font-family: inherit;
+            font-size: inherit;
+            flex-grow: 1;
             outline: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Foutmeldingen iets anders kleuren (optioneel) */
+        .error {
+            color: #e74c3c;
         }
     </style>
 </head>
 <body>
 
-<div id="terminal">
-    <div id="history">
-        <pre>Gestart. Welkom bij de (zeer onveilige) web shell.</pre>
-        <pre>Gebruik Pijl Omhoog/Omlaag voor geschiedenis. Typ 'cls' om te wissen.</pre>
-    </div>
+<div id="output-area">
+    Microsoft Windows [Version 10.0.19045.3693]<br>
+    (c) Microsoft Corporation. All rights reserved.<br><br>
+</div>
 
-    <form id="shell-form">
-        <div id="command-line">
-            <span id="prompt">C:\></span>
-            <input type="text" id="command-input" autocomplete="off" autofocus>
-        </div>
-    </form>
+<div class="input-line">
+    <span class="prompt">C:\Windows\System32></span>
+    <input type="text" id="cmd-input" autocomplete="off" autofocus>
 </div>
 
 <script>
-    // Pak de elementen die we nodig hebben
-    const terminal = document.getElementById('terminal');
-    const historyContainer = document.getElementById('history');
-    const shellForm = document.getElementById('shell-form');
-    const commandInput = document.getElementById('command-input');
+    const inputField = document.getElementById('cmd-input');
+    const outputArea = document.getElementById('output-area');
+    const body = document.body;
+    // Pak de prompt span zodat we de tekst kunnen aanpassen
+    const promptSpan = document.querySelector('.prompt');
 
-    // --- NIEUW: Voor commandogeschiedenis ---
-    let commandHistory = [];
-    let historyIndex = -1; // Begint bij -1, dus eerste keer Pijl-Omhoog is index 0
-    // ----------------------------------------
+    // Zet initiële prompt (optioneel, wordt overschreven na eerste commando)
+    let currentPrompt = "C:\\Windows\\System32>";
+    promptSpan.textContent = currentPrompt;
 
-    // Wacht tot het formulier wordt verstuurd (als de gebruiker op Enter drukt)
-    shellForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Voorkom dat de pagina herlaadt
+    document.addEventListener('click', () => inputField.focus());
 
-        const command = commandInput.value.trim(); // .trim() haalt witruimte weg
+    inputField.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const command = inputField.value;
 
-        // Als er geen commando is, doe niets
-        if (command === '') return;
+            // 1. Toon het commando in de geschiedenis
+            outputArea.innerHTML += `<div>${currentPrompt} ${escapeHtml(command)}</div>`;
 
-        // --- NIEUW: Voeg toe aan geschiedenis ---
-        commandHistory.push(command);
-        historyIndex = commandHistory.length; // Reset index naar het einde
-        // ---------------------------------------
+            inputField.value = '';
+            window.scrollTo(0, body.scrollHeight);
 
-        // 1. Maak de input leeg en 'disable' hem tijdelijk
-        commandInput.value = '';
-        commandInput.disabled = true;
+            if (!command.trim()) return;
 
-        // 2. Toon het commando dat we net typten in de geschiedenis
-        const commandHistoryEl = document.createElement('div');
-        commandHistoryEl.innerHTML = `<span id="prompt">C:\></span> ${escapeHTML(command)}`;
-        historyContainer.appendChild(commandHistoryEl);
+            try {
+                const response = await fetch('/cmd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: command })
+                });
 
-        // --- NIEUW: 'cls' of 'clear' afvangen ---
-        if (command.toLowerCase() === 'cls' || command.toLowerCase() === 'clear') {
-            historyContainer.innerHTML = '<pre>Scherm gewist.</pre>';
-            commandInput.disabled = false;
-            commandInput.focus();
-            scrollToBottom();
-            return; // Stop executie, stuur niet naar server
-        }
-        // ----------------------------------------
+                // 2. We verwachten nu JSON terug
+                const data = await response.json();
 
-        try {
-            // 3. Stuur het commando naar de /shell endpoint
-            const response = await fetch('/cmd', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: command })
-            });
+                // Toon de output (als die er is)
+                if (data.output) {
+                    // Strip <pre> tags als die er nog in zitten
+                    let cleanOutput = data.output.replace(/<\/?pre>/g, '');
+                    outputArea.innerHTML += `<div>${escapeHtml(cleanOutput)}</div>`;
+                }
 
-            const output = await response.text();
+                // 3. UPDATE DE PROMPT LIVE!
+                if (data.cwd) {
+                    currentPrompt = data.cwd + ">";
+                    promptSpan.textContent = currentPrompt;
+                }
 
-            // 4. Maak een nieuw <pre> element voor de output
-            const outputEl = document.createElement('pre');
-
-            if (!response.ok) {
-                outputEl.className = 'error';
+            } catch (err) {
+                outputArea.innerHTML += `<div class="error">Error: ${err.message}</div>`;
             }
 
-            outputEl.innerHTML = output; // Server stuurt al <pre> tags
-
-            // 5. Voeg de server-output toe aan de geschiedenis
-            historyContainer.appendChild(outputEl);
-
-        } catch (error) {
-            // Vang netwerkfouten op
-            const errorEl = document.createElement('pre');
-            errorEl.className = 'error';
-            errorEl.textContent = `Fout bij verbinding: ${error.message}`;
-            historyContainer.appendChild(errorEl);
-        }
-
-        // 6. Maak de input weer 'enabled' en focus erop
-        commandInput.disabled = false;
-        commandInput.focus();
-
-        // 7. Scroll de terminal automatisch naar beneden
-        scrollToBottom();
-    });
-
-    // --- NIEUW: Luister naar Pijl-Omhoog en Pijl-Omlaag ---
-    commandInput.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowUp') {
-            e.preventDefault(); // Voorkom dat cursor naar begin van de regel springt
-            if (historyIndex > 0) {
-                historyIndex--;
-                commandInput.value = commandHistory[historyIndex];
-            }
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (historyIndex < commandHistory.length - 1) {
-                historyIndex++;
-                commandInput.value = commandHistory[historyIndex];
-            } else {
-                // Als we aan het einde zijn, maak het veld leeg
-                historyIndex = commandHistory.length;
-                commandInput.value = '';
-            }
+            window.scrollTo(0, body.scrollHeight);
         }
     });
 
-    // Hulpfuncties
-    function scrollToBottom() {
-        terminal.scrollTop = terminal.scrollHeight;
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+
+            .replace(/\n/g, "<br>");
     }
-
-    // Simpele functie om HTML-injectie te voorkomen bij het tonen van het commando
-    function escapeHTML(str) {
-        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    // Klik ergens in de terminal om de input te focussen
-    terminal.addEventListener('click', () => {
-        commandInput.focus();
-    });
-
 </script>
 </body>
 </html>

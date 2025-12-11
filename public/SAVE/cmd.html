@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Shell</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #terminal {
+            width: 100%;
+            height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #333;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+        #history {
+            width: 100%;
+        }
+        pre {
+            color: #00ff00;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        pre.error {
+            color: #ff4136;
+        }
+        #command-line {
+            display: flex;
+        }
+        #prompt {
+            margin-right: 5px;
+            color: #00ff00;
+        }
+        #command-input {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="terminal">
+    <div id="history">
+        <pre>Gestart. Welkom bij de (zeer onveilige) web shell.</pre>
+        <pre>Gebruik Pijl Omhoog/Omlaag voor geschiedenis. Typ 'cls' om te wissen.</pre>
+    </div>
+
+    <form id="shell-form">
+        <div id="command-line">
+            <span id="prompt">C:\></span>
+            <input type="text" id="command-input" autocomplete="off" autofocus>
+        </div>
+    </form>
+</div>
+
+<script>
+
+    const terminal = document.getElementById('terminal');
+    const historyContainer = document.getElementById('history');
+    const shellForm = document.getElementById('shell-form');
+    const commandInput = document.getElementById('command-input');
+
+    let commandHistory = [];
+    let historyIndex = -1;
+
+    shellForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const command = commandInput.value.trim();
+
+
+        if (command === '') return;
+
+
+        commandHistory.push(command);
+        historyIndex = commandHistory.length;
+
+
+        commandInput.value = '';
+        commandInput.disabled = true;
+
+
+        const commandHistoryEl = document.createElement('div');
+        commandHistoryEl.innerHTML = `<span id="prompt">></span> ${escapeHTML(command)}`;
+        historyContainer.appendChild(commandHistoryEl);
+
+
+        if (command.toLowerCase() === 'cls' || command.toLowerCase() === 'clear') {
+            historyContainer.innerHTML = '<pre>Scherm gewist.</pre>';
+            commandInput.disabled = false;
+            commandInput.focus();
+            scrollToBottom();
+            return;
+        }
+
+
+        try {
+
+            const response = await fetch('/cmd', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: command })
+            });
+
+            const output = await response.text();
+
+            const outputEl = document.createElement('pre');
+
+            if (!response.ok) {
+                outputEl.className = 'error';
+            }
+
+            outputEl.innerHTML = output;
+
+            historyContainer.appendChild(outputEl);
+
+        } catch (error) {
+            // Vang netwerkfouten op
+            const errorEl = document.createElement('pre');
+            errorEl.className = 'error';
+            errorEl.textContent = `Fout bij verbinding: ${error.message}`;
+            historyContainer.appendChild(errorEl);
+        }
+
+
+        commandInput.disabled = false;
+        commandInput.focus();
+
+
+        scrollToBottom();
+    });
+
+ -
+    commandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                historyIndex--;
+                commandInput.value = commandHistory[historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                commandInput.value = commandHistory[historyIndex];
+            } else {
+
+                historyIndex = commandHistory.length;
+                commandInput.value = '';
+            }
+        }
+    });
+
+
+    function scrollToBottom() {
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+
+    function escapeHTML(str) {
+        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    terminal.addEventListener('click', () => {
+        commandInput.focus();
+    });
+
+</script>
+</body>
+</html>

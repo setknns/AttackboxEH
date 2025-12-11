@@ -127,7 +127,7 @@
 
         if(data.success) {
             // Redirect na 1 seconde bij succes
-            setTimeout(() => window.location.href = '/cmd.html', 1500);
+            setTimeout(() => window.location.href = '/', 1500);
         }
     });
 
@@ -146,9 +146,9 @@
 
         if (data.success) {
             document.getElementById('question-text').textContent = data.question;
-            secStep.classList.remove('hidden'); // Toon de volgende stap
+            secStep.classList.remove('hidden');
             msg.textContent = '';
-            // Disable het gebruikersnaam veld zodat je niet per ongeluk switcht
+
             document.getElementById('reset-user').disabled = true;
             document.getElementById('get-question-btn').style.display = 'none';
         } else {
@@ -186,7 +186,7 @@
             msg.className = 'status-msg success';
             // Na succes terugsturen naar login scherm
             setTimeout(() => {
-                location.reload(); // Herlaad de pagina om velden te resetten
+                location.reload();
             }, 2000);
         } else {
             msg.className = 'status-msg error';
