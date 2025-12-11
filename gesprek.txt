@@ -1,0 +1,10 @@
+[2024-03-14 09:15:23] Colin: Hey Seth, heb je al toegang tot de server gekregen?
+[2024-03-14 09:16:05] Seth: Nog niet, ik ben mijn inloggegevens kwijtgeraakt...
+[2024-03-14 09:16:42] Colin: Oei, dat is vervelend. Wat was ook alweer je ssh login naam?
+[2024-03-14 09:17:18] Seth: Volgens mij was het "RedbullADMIN" of iets dergelijks
+[2024-03-14 09:18:03] Colin: Weet je het zeker? Ik dacht dat het specifieker was
+[2024-03-14 09:18:45] Seth: Wacht even... ik zoek in mijn notities... o ja!
+[2024-03-14 09:19:22] Seth: Het was "sshuser"
+[2024-03-14 09:20:01] Colin: Ah ja, dat klinkt bekend
+[2024-03-14 09:22:15] Seth: Succes! Laat me weten of je erin komt
+[2024-03-14 09:23:05] Colin: Ik ben binnen! Thanks voor de hulp
