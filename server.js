@@ -143,6 +143,10 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+app.get('/gesprek', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'gesprek.txt'));
+});
+
 app.get('/status', (req, res) => {
     res.status(200).json({
         status: 'online',
