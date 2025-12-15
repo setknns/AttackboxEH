@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = 3000;
+const port = 8080;
 
 app.use(express.json());
 
@@ -96,7 +96,12 @@ app.post('/cmd', (req, res) => {
     if (isLoggedIn === false) return res.status(501).send("Log in required.");
 
     let { command } = req.body;
-    if (!command) return res.status(400).send('Geen commando.');
+    if (!command) {
+        return res.status(400).json({
+            output: 'Error: Geen commando.',
+            cwd: currentDir
+        });
+    }
 
     command = command.trim();
 
