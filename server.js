@@ -93,15 +93,9 @@ app.post('/claim', (req, res) => {
 
 app.post('/cmd', (req, res) => {
 
-    if (isLoggedIn === false) {
-        return res.status(501).json({
-            output: "ERROR: Access Denied. Please log in first.",
-            cwd: currentDir
-        });
-
+    if (isLoggedIn === false) return res.status(501).send("Log in required.");
 
     let { command } = req.body;
-
     if (!command) {
         return res.status(400).json({
             output: 'Error: Geen commando.',
